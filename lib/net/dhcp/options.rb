@@ -172,6 +172,25 @@ module DHCP
     end
   end
 
+  # This option specifies the broadcast address in use on the client's
+  # subnet.  Legal values for broadcast addresses are specified in
+  # section 3.2.1.3 of [4].
+  #
+  # The code for this option is 28, and its length is 4.
+  #
+  # The default value for this option is 255.255.255.255
+  class BroadcastAddressOption < Option
+    def initialize(params={})
+      params[:type] = $DHCP_BROADCASTADDR
+      params[:payload] = params.fetch(:payload, [255, 255, 255, 255])
+      super(params)
+    end
+
+    def to_s()
+      "Broadcast Adress = #{self.payload.join('.')}"
+    end
+  end
+
   # This option is used in a client request (DHCPDISCOVER) to allow the
   # client to request that a particular IP address be assigned.
   #
@@ -209,7 +228,10 @@ module DHCP
     end
 
     def to_s()
-      "IP Address Lease Time = #{self.payload.pack('C*').unpack('N').first} seg"
+      value = self.payload.pack('C*').unpack('N').first
+      value = "infinite" if value == 0xffffffff
+
+      "IP Address Lease Time = #{value} seg"
     end
   end
 
@@ -289,7 +311,7 @@ module DHCP
     end
 
     def to_s
-      "Parameter Request List = #{self.payload}"
+      "Parameter Request List = #{self.payload.join(',')}"
     end
   end
 
@@ -561,7 +583,7 @@ module DHCP
     $DHCP_MTUTABLE => Option,
     $DHCP_MTUSIZE => Option,
     $DHCP_LOCALSUBNETS => Option,
-    $DHCP_BROADCASTADDR => Option,
+    $DHCP_BROADCASTADDR => BroadcastAddressOption,
     $DHCP_DOMASKDISCOV => Option,
     $DHCP_MASKSUPPLY => Option,
     $DHCP_DOROUTEDISC => Option,

@@ -205,7 +205,7 @@ module DHCP
     def to_s
       out = "DHCP Message\r\n"
       out << "\tFIELDS:\r\n"
-      out << "\t\tTransaction ID = #{self.xid}\r\n"
+      out << "\t\tTransaction ID = 0x#{self.xid.to_s(16)}\r\n"
       out << "\t\tClient IP address = #{[self.ciaddr].pack('N').unpack('C4').join('.')}\r\n"
       out << "\t\tYour IP address = #{[self.yiaddr].pack('N').unpack('C4').join('.')}\r\n"      
       out << "\t\tNext server IP address = #{[self.siaddr].pack('N').unpack('C4').join('.')}\r\n"
