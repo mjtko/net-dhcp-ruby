@@ -29,6 +29,7 @@ module DHCP
     attr_accessor :xid
     attr_accessor :secs, :flags
     attr_accessor :ciaddr, :yiaddr, :siaddr, :giaddr, :chaddr
+    attr_accessor :sname, :fname
     attr_accessor :options
 
     alias == eql?
@@ -50,11 +51,13 @@ module DHCP
         :yiaddr => values.shift,
         :siaddr => values.shift,
         :giaddr => values.shift,
-        :chaddr => values.slice!(0..15)
+        :chaddr => values.slice!(0..15),
+        :sname => values.slice!(0..63),
+        :fname => values.slice!(0..127),
       }
       
-      # sname and file
-      not_used = values.slice!(0..191)
+      # sname and file are now used
+      #not_used = values.slice!(0..191) 127+63 190
       
       return nil unless ($DHCP_MAGIC == values.shift)
       
@@ -64,7 +67,6 @@ module DHCP
       opt_class = Option
       
       params[:options] = []
-      
       next_opt = values.shift
       while(next_opt != $DHCP_END)
         p = {
@@ -148,7 +150,34 @@ module DHCP
         self.chaddr = [mac].pack('H*').unpack('CCCCCC')
         self.chaddr += [0x00]*(16-self.chaddr.size)
       end
-    
+
+      if (params.key?(:sname))
+        sname = params[:sname]
+        case 
+        when sname.size == 64
+          self.sname = sname
+        when sname.size < 64 && sname.class == String
+          self.sname = sname.unpack('C64').map {|x| x ? x : 0}
+        else
+          raise 'sname field should be of 64 bytes or a string of less'
+        end
+      else
+        self.sname = [0x00]*64
+      end
+
+      if (params.key?(:fname))
+        fname = params[:fname]
+        case 
+        when fname.size == 128
+          self.fname = fname
+        when fname.size < 128 && fname.class == String
+          self.fname = fname.unpack('C128').map {|x| x ? x : 0}
+        else
+          raise 'fname field should be of 128 bytes or a string of less'
+        end
+      else
+        self.fname = [0x00]*128
+      end
       
     end
   
@@ -168,9 +197,12 @@ module DHCP
       else
         out << (self.chaddr + [0x00]*(16-self.chaddr.size)).pack('C16')
       end
-      
+      # file_name/server_name for pxe
+      out << self.sname.pack('C64')
+      out << self.fname.pack('C128')
+    
       # sname and file
-      out << ([0x00]*192).pack('C192')
+      # out << ([0x00]*192).pack('C192')
     
       out << [$DHCP_MAGIC].pack('N')
       self.options.each do |option|
@@ -217,6 +249,8 @@ module DHCP
       out << "\t\tNext server IP address = #{[self.siaddr].pack('N').unpack('C4').join('.')}\r\n"
       out << "\t\tRelay agent IP address = #{[self.giaddr].pack('N').unpack('C4').join('.')}\r\n"      
       out << "\t\tHardware address = #{self.chaddr.slice(0..(self.hlen-1)).collect do |b| b.to_s(16).upcase.rjust(2,'0') end.join(':')}\r\n"
+      out << "\t\tServer Name = #{self.sname.pack('n*').unpack('A*')}\r\n"
+      out << "\t\tFile Name = #{self.fname.pack('n*').unpack('A*')}\r\n"
       out << "\tOPT:\r\n"
       self.options.each do |opt|
         out << "\t\t #{opt.to_s}\r\n"
@@ -244,7 +278,7 @@ module DHCP
     def initialize(params={})
       params[:op] = $DHCP_OP_REPLY
       params[:options] = params.fetch(:options, [
-      MessageTypeOption.new({:payload=>$DHCP_MSG_OFFER}), 
+      MessageTypeOption.new({:payload=>[$DHCP_MSG_OFFER]}), 
       ServerIdentifierOption.new,
       DomainNameOption.new
       ])

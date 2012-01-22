@@ -252,6 +252,7 @@ module DHCP
   #
   # The default value is 1 (DHCPDISCOVER)
   class MessageTypeOption < Option
+    #DEBUG
     def initialize(params={})
       params[:type] = $DHCP_MESSAGETYPE
       params[:payload] = params.fetch(:payload, [$DHCP_MSG_DISCOVER])
@@ -509,7 +510,7 @@ module DHCP
     end
 
     def to_s
-      "UserClassInformation = #{self.payload}"
+      "UserClassInformation = #{self.payload.pack('C*')}"
     end
   end
 
