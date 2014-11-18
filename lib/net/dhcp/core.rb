@@ -153,7 +153,11 @@ module DHCP
             mac = mac_line.strip.split(":")[1].gsub("-","").strip
           end
         else
-          mac = `/sbin/ifconfig | grep HWaddr | cut -c39- | head -1`.chomp.strip.gsub(/:/,'')
+          ifcfg_out = `/sbin/ifconfig`.chomp
+          matches1 = ifcfg_out.scan(/HWaddr ([a-h0-9:]+)/i).flatten  # Linux
+          matches2 = ifcfg_out.scan(/ether ([a-h0-9:]+)/i).flatten   # Some Linux (EL7), BSDs
+          mac = matches1.first || matches2.first
+          mac = mac.gsub(/:/,"") if mac
         end
         mac = '000000000000' if mac.empty?
         self.chaddr = [mac].pack('H*').unpack('CCCCCC')
