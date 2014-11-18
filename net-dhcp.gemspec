@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.name = 'net-dhcp'
   s.version = Net::Dhcp::VERSION
   s.platform = Gem::Platform::RUBY
-  s.date = "2014-10-22"
+  s.date = "2014-11-18"
   s.authors = ['daniel martin gomez (etd)', 'syonbori', 'Mark J. Titorenko']
   s.email = 'mark.titorenko@alces-software.com'
   s.homepage = 'http://github.com/mjtko/net-dhcp-ruby'
