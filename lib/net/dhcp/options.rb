@@ -555,6 +555,33 @@ module DHCP
     end
   end
 
+  # The subnet selection option is a DHCP option.  The option contains a
+  # single IPv4 address that is the address of a subnet.  The value for
+  # the subnet address is determined by taking any IPv4 address on the
+  # subnet and ANDing that address with the subnet mask (i.e.: the
+  # network and subnet bits are left alone and the remaining (address)
+  # bits are set to zero).  When the DHCP server is configured to respond
+  # to this option, is allocating an address, and this option is present
+  # then the DHCP server MUST allocate the address on either:
+  #  - the subnet specified in the subnet selection option, or;
+  #
+  #  - a subnet on the same network segment as the subnet specified in the
+  #          subnet selection option.
+  #
+  # The code for this option is 118, and its length is 4.
+  #
+  class SubnetSelectionOption < Option
+    def initialize(params={})
+      params[:type] =  $DHCP_SUBNET_SELECTION
+      params[:payload] = params.fetch(:payload)
+      super(params)
+    end
+    
+    def to_s()
+      "Subnet Selection = #{self.payload.join('.')}"
+    end
+  end
+
   $DHCP_MSG_OPTIONS = {
     $DHCP_SUBNETMASK => SubnetMaskOption,
     $DHCP_TIMEOFFSET => Option,
@@ -638,7 +665,7 @@ module DHCP
     $DHCP_LDAP => Option,
     $DHCP_UUIDGUID => UUIDGUIDOption,
     $DHCP_AUTOCONF => AutoConfigurationOption,
-
+    $DHCP_SUBNET_SELECTION => SubnetSelectionOption,
   }
 
 end
